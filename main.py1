@@ -1,0 +1,88 @@
+# POCKET-SMART-AI - Smart Budget & Recommendation Assistant
+# Main.py
+
+import os
+from datetime import datetime
+import google.generativeai as genai
+
+# Configure Gemini API Key - SkillWallet la irunthu env la set pannu
+# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# For demo, you can paste your key directly
+genai.configure(api_key="YOUR_GEMINI_API_KEY_HERE")
+
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+class PocketSmartAI:
+    def __init__(self):
+        self.expenses = []
+        self.budget = 0
+
+    def set_budget(self, amount):
+        self.budget = amount
+        print(f"Monthly Budget Set: Rs.{amount}")
+
+    def add_expense(self, category, amount, description=""):
+        expense = {
+            "category": category,
+            "amount": amount,
+            "description": description,
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
+        self.expenses.append(expense)
+        print(f"Added: {category} - Rs.{amount}")
+
+    def get_total_spent(self):
+        return sum(e['amount'] for e in self.expenses)
+
+    def get_analysis(self):
+        total_spent = self.get_total_spent()
+        remaining = self.budget - total_spent
+        
+        prompt = f"""
+        You are a smart financial advisor for a student in India.
+        Monthly Budget: Rs.{self.budget}
+        Total Spent: Rs.{total_spent}
+        Remaining: Rs.{remaining}
+        Expenses: {self.expenses}
+        
+        Give:
+        1. Budget analysis in 3 lines
+        2. Where money is overspent
+        3. 3 smart saving recommendations
+        4. In simple English + Tamil mix
+        """
+        
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            return f"AI Analysis Error: {e}\nManual Analysis: Spent {total_spent}/{self.budget}, Remaining {remaining}"
+
+def main():
+    print("=== POCKET SMART AI ===")
+    ai = PocketSmartAI()
+    
+    # Example Usage
+    budget = int(input("Enter your monthly budget Rs: "))
+    ai.set_budget(budget)
+
+    while True:
+        print("\n1. Add Expense | 2. View Analysis | 3. Exit")
+        choice = input("Choose: ")
+        
+        if choice == '1':
+            cat = input("Category (Food/Travel/Shopping/Bills): ")
+            amt = float(input("Amount Rs: "))
+            desc = input("Description: ")
+            ai.add_expense(cat, amt, desc)
+        elif choice == '2':
+            print("\n--- AI BUDGET ANALYSIS ---")
+            print(ai.get_analysis())
+            print(f"\nTotal Spent: Rs.{ai.get_total_spent()} | Remaining: Rs.{ai.budget - ai.get_total_spent()}")
+        elif choice == '3':
+            break
+        else:
+            print("Invalid choice")
+
+if __name__ == "__main__":
+    main()
